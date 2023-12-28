@@ -418,19 +418,19 @@ local function Voice(args)
     local _rands_window = Rands_window{ voice = n }
     local _loop = Mparam()
 
-    local _q = Patcher.enc_screen.destination(Mparam())
+    local _qual = Patcher.enc_screen.destination(Mparam())
     local _cut = Patcher.enc_screen.destination(Mparam())
-    local _typ = Patcher.enc_screen.destination(Mparam())
+    local _crv = Patcher.enc_screen.destination(Mparam())
     local _rand_cut = Rand{ voice = n, id = 'cut' }
-    local _rand_typ = Rand{ voice = n, id = 'type' }
+    local _rand_crv = Rand{ voice = n, id = 'crv' }
 
     return function(props)
         if props.tab == 1 then
-            _old(mparams:get_id(n, 'old'), active_src, { 
-                id = 'old', voice = n, n = 1, levels = { 4, 15 } 
-            })
             _lvl(mparams:get_id(n, 'lvl'), active_src, { 
-                id = 'lvl', voice = n, n = 2, levels = { 4, 15 } 
+                id = 'lvl', voice = n, n = 1, levels = { 4, 15 } 
+            })
+            _old(mparams:get_id(n, 'old'), active_src, { 
+                id = 'old', voice = n, n = 2, levels = { 4, 15 } 
             })
             _spr(mparams:get_id(n, 'spr'), active_src, { 
                 id = 'spr', voice = n, n = 3, levels = { 4, 15 } 
@@ -456,17 +456,17 @@ local function Voice(args)
                 _rands_window{ n = { 2, 3 }, levels = { 4, 15 } }
             end
         elseif props.tab == 3 then
-            _q(mparams:get_id(n, 'q'), active_src, { 
-                id = 'q', voice = n, n = 1, levels = { 4, 15 } 
+            _qual(mparams:get_id(n, 'qual'), active_src, { 
+                id = 'qual', voice = n, n = 1, levels = { 4, 15 } 
             })
             _cut(mparams:get_id(n, 'cut'), active_src, { 
                 id = 'cut', voice = n, n = 2, levels = { 4, 15 } 
             })
-            _typ(mparams:get_id(n, 'type'), active_src, { 
-                id = 'type', voice = n, n = 3, levels = { 4, 15 } 
+            _crv(mparams:get_id(n, 'crv'), active_src, { 
+                id = 'crv', voice = n, n = 3, levels = { 4, 15 } 
             })
             _rand_cut{ n = 2 }
-            _rand_typ{ n = 3 }
+            _rand_crv{ n = 3 }
         end
     end
 end
@@ -557,10 +557,11 @@ function Modal.buffer()
     end
 end
 
+
 local function App()
     local _alt = Key.momentary()
 
-    local _waveform, _filtergraph
+    local _waveform
     do
         local left, right = x[1] + 1, x[3] - 1
         local top, bottom = y[2], y[3]
@@ -570,10 +571,14 @@ local function App()
             y = { top, bottom },
             --y = 64 / 2 + 1, amp = e[2].y - (64/2) - 2,
         }
-        _filtergraph = Components.screen.filtergraph{
-            x = left, w = right - left, 
-            y = top, h = bottom - top,
-        }
+        -- _filtergraph = Components.screen.filtergraph{
+        --     x = left, w = right - left, 
+        --     y = top, h = bottom - top,
+        -- }
+        
+        for i = 1,voices do
+            filtergraphs[i].graph:set_position_and_size(left, top, right - left, bottom - top)
+        end
     end
     
     local track_names = {}
@@ -826,23 +831,25 @@ local function App()
                         end
                     }
                 elseif tab == 3 then
-                    local cut_spec = mparams:get_controlspec('cut')
-                    local q_spec = mparams:get_controlspec('q')
+                    -- local cut_spec = mparams:get_controlspec('cut')
+                    -- local q_spec = mparams:get_controlspec('q')
 
-                    _filtergraph{
-                        filter_type = ({ 
-                            'lowpass', 'bandpass', 'highpass', 'bypass' 
-                        })[
-                            get_mparam(n, 'type')
-                        ],
-                        freq = util.linexp(
-                            cut_spec.minval, cut_spec.maxval, 
-                            20, 20000, 
-                            get_mparam(n, 'cut')
-                        ),
-                        -- resonance = util.linexp(0, 1, 0.01, 20, mparams:get(n, 'q')),
-                        resonance = q_spec:unmap(get_mparam(n, 'q')),
-                    }
+                    -- _filtergraph{
+                    --     filter_type = ({ 
+                    --         'lowpass', 'bandpass', 'highpass', 'bypass' 
+                    --     })[
+                    --         get_mparam(n, 'type')
+                    --     ],
+                    --     freq = util.linexp(
+                    --         cut_spec.minval, cut_spec.maxval, 
+                    --         20, 20000, 
+                    --         get_mparam(n, 'cut')
+                    --     ),
+                    --     -- resonance = util.linexp(0, 1, 0.01, 20, mparams:get(n, 'q')),
+                    --     resonance = q_spec:unmap(get_mparam(n, 'q')),
+                    -- }
+
+                    filtergraphs[view.track].redraw()
                 end
             end
 

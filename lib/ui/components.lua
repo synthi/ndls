@@ -473,7 +473,11 @@ function Components.grid.arc_focus()
                 local g = crops.handler
 
                 for i = 0,tall and 5 or 3 do for j = 0,3 do 
-                    g:led(props.x + j, props.y + i, props.levels[props.view[i + 1][j + 1] + 1])
+                    g:led(
+                        props.x + j, 
+                        props.y + i, 
+                        props.levels[j + 1][props.view[i + 1][j + 1] + 1]
+                    )
                 end end
             end
         end
@@ -633,27 +637,37 @@ function Components.arc.filter()
             local a = crops.handler
             local v = props.controlspec:unmap(props.cut)
             local vv = math.floor(v*(props.x[2] - props.x[1])) + props.x[1]
-            local t = props.type
 
             for x = props.x[1], props.x[2] do
-                local lvl = (
-                    t==1 and (               --lp
-                        (x < vv) and props.levels[1]
-                        or (x == vv) and props.levels[2]
-                        or 0
-                    )
-                    or t==2 and (            --bp
-                        util.clamp(
-                            props.levels[2] - math.abs(x - vv)*3,
-                        0, 15)
-                    )
-                    or t==3 and (            --hp
-                        (x < vv) and 0
-                        or (x == vv) and props.levels[2]
-                        or props.levels[1]
-                    )
-                    or t==4 and props.levels[1] --dry
+                -- local lvl = (
+                --     t==1 and (               --lp
+                --         (x < vv) and props.levels[1]
+                --         or (x == vv) and props.levels[2]
+                --         or 0
+                --     )
+                --     or t==2 and (            --bp
+                --         util.clamp(
+                --             props.levels[2] - math.abs(x - vv)*3,
+                --         0, 15)
+                --     )
+                --     or t==3 and (            --hp
+                --         (x < vv) and 0
+                --         or (x == vv) and props.levels[2]
+                --         or props.levels[1]
+                --     )
+                --     or t==4 and props.levels[1] --dry
+                -- )
+
+                local cut = (x == vv) and props.levels[2] or 0
+                local dry = props.dry * props.levels[1]
+                local lp = (x < vv) and props.lp*props.levels[1] or 0
+                local bp = props.bp * util.clamp(
+                    props.levels[1] - math.abs(x - vv)*2, 0, props.levels[1]
                 )
+                local hp = (x > vv) and props.hp*props.levels[1] or 0
+
+                local filt = util.clamp(math.floor(dry + lp + bp + hp), 0, props.levels[1])
+                local lvl = util.clamp(filt + cut, 0, props.levels[2])
 
                 if lvl>0 then a:led(props.n, (x - 1) % 64 + 1, lvl) end
             end
